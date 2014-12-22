@@ -32,11 +32,11 @@ class InvalidCredentialsError(Fault):
 class SpyneController(object):
     def __init__(self, app=None):
         self.services = {}
-        self.app = app
         if app:
             self.init_app(app)
 
     def init_app(self, app):
+        self.app = app
         self.real_wsgi_app = app.wsgi_app
         app.wsgi_app = self.wsgi_app
 
@@ -55,7 +55,8 @@ class SpyneController(object):
         
     def wsgi_app(self, environ, start_response):
         dispatcher = DispatcherMiddleware(self.real_wsgi_app, self.services)
-        return dispatcher(environ, start_response)
+        with self.app.app_context():
+            return dispatcher(environ, start_response)
 
 class SpyneService(ServiceBase):
     __target_namespace__ = 'tns'
