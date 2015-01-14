@@ -14,6 +14,7 @@ from spyne.application import Application
 from spyne.decorator import rpc, srpc
 from spyne.service import ServiceBase, ServiceBaseMeta
 from spyne.server.wsgi import WsgiApplication
+from flask import current_app
 
 from secwall import wsse
 from secwall.core import SecurityException
@@ -55,8 +56,15 @@ class SpyneController(object):
         
     def wsgi_app(self, environ, start_response):
         dispatcher = DispatcherMiddleware(self.real_wsgi_app, self.services)
-        with self.app.app_context():
+        ctx = None
+        if not current_app:
+            ctx = self.app.app_context().push()
+        try:
             return dispatcher(environ, start_response)
+        finally:
+            if ctx:
+                ctx.pop()
+
 
 class SpyneService(ServiceBase):
     __target_namespace__ = 'tns'
